@@ -46,13 +46,15 @@ const schedule=[[['A','B'],['C','D'],'E'],[['A','C'],['B','E'],'D'],[['A','D'],[
 const ids=['A','B','C','D','E'];
 const blank=()=>({teams:names.map(n=>({name:n,players:['','','','']})),matches:[],semis:[],bronze:null,final:null});
 let data=blank();try{const s=localStorage.getItem('combateUnityEquipes');if(s){const old=JSON.parse(s);data={...blank(),...old,teams:(old.teams||blank().teams).map((t,i)=>({name:t.name||names[i],players:Array.isArray(t.players)?[...t.players,'','','',''].slice(0,4):['','','','']}))}}}catch(e){}
-const $=id=>document.getElementById(id);
+const $=id=>document.getElementById(id);data.matches.forEach((m,i)=>{
+if(!m.id)m.id='pool-'+(m.round||1)+'-'+(m.number||i+1);
+});
 function persist(){localStorage.setItem('combateUnityEquipes',JSON.stringify(data));render()}
 function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function teamIndex(letter){return ids.indexOf(letter)}
 function loadTeamFields(){data.teams.forEach((t,i)=>{const n=$('teamName'+i);if(n)n.value=t.name; t.players.forEach((v,j)=>{const el=$('player'+i+'_'+j);if(el)el.value=v;});});}
 document.querySelectorAll('.saveTeam').forEach(btn=>btn.onclick=()=>{const i=+btn.dataset.team;const n=$('teamName'+i).value.trim();if(!n)return alert('Digite o nome da equipe.');data.teams[i].name=n;data.teams[i].players=[0,1,2,3].map(j=>$('player'+i+'_'+j).value.trim());persist();alert('Equipe e os quatro jogadores salvos!')});
-function makeMatches(){if(data.teams.some(t=>!t.name.trim()))return alert('Informe o nome das cinco equipes antes de gerar as rodadas.');if(data.teams.some(t=>!Array.isArray(t.players)||t.players.length!==4||t.players.some(p=>!String(p).trim())))return alert('Cadastre e salve os quatro jogadores de cada uma das cinco equipes antes de gerar as rodadas.');if(!confirm('Gerar os 10 jogos das 5 rodadas? Os resultados existentes serão apagados.'))return;data.matches=[];schedule.forEach((r,ri)=>r.slice(0,2).forEach((pair,mi)=>data.matches.push({round:ri+1,number:mi+1,a:teamIndex(pair[0]),b:teamIndex(pair[1]),sa:'',sb:''})));data.semis=[];data.bronze=null;data.final=null;persist();show('rodadas')}
+function makeMatches(){if(data.teams.some(t=>!t.name.trim()))return alert('Informe o nome das cinco equipes antes de gerar as rodadas.');if(data.teams.some(t=>!Array.isArray(t.players)||t.players.length!==4||t.players.some(p=>!String(p).trim())))return alert('Cadastre e salve os quatro jogadores de cada uma das cinco equipes antes de gerar as rodadas.');if(!confirm('Gerar os 10 jogos das 5 rodadas? Os resultados existentes serão apagados.'))return;data.matches=[];schedule.forEach((r,ri)=>r.slice(0,2).forEach((pair,mi)=>data.matches.push({id:'pool-'+(ri+1)+'-'+(mi+1),round:ri+1,,number:mi+1,a:teamIndex(pair[0]),b:teamIndex(pair[1]),sa:'',sb:''})));data.semis=[];data.bronze=null;data.final=null;persist();show('rodadas')}
 $('createGames').onclick=makeMatches;
 $('clearAll').onclick=()=>{if(confirm('Apagar todas as equipes e resultados?')){data=blank();persist()}};
 function stats(){let rows=data.teams.map((t,i)=>({i,name:t.name,j:0,w:0,l:0,pts:0,pf:0,pa:0}));for(let m of data.matches){if(m.sa===''||m.sb===''||+m.sa===+m.sb)continue;let a=rows[m.a],b=rows[m.b],x=+m.sa,y=+m.sb;a.j++;b.j++;a.pf+=x;a.pa+=y;b.pf+=y;b.pa+=x;if(x>y){a.w++;a.pts+=3;b.l++}else{b.w++;b.pts+=3;a.l++}}return rows.sort((a,b)=>b.pts-a.pts||((b.pf-b.pa)-(a.pf-a.pa))||b.pf-a.pf||a.name.localeCompare(b.name))}
